@@ -10,13 +10,13 @@ class ApiResponseException(Exception):
     ...
 
 
-class ApiHomeworkException(Exception):
+class ApiHomeworkStatusException(Exception):
     """Custom API homework exception."""
 
     ...
 
 
 class TelegramSendMessageException(Exception):
-    """Custom API telegram send message exception."""
+    """Custom telegram send message exception."""
 
     ...
