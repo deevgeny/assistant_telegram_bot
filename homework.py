@@ -9,8 +9,9 @@ import telegram
 import requests
 from dotenv import load_dotenv
 
-from exceptions import ApiEndpoinException, ApiResponseException
+from exceptions import ApiEndpointFatalException, ApiResponseException
 from exceptions import ApiHomeworkStatusException, TelegramSendMessageException
+from exceptions import ApiEndpointHttpResponseException
 
 # Load tokens
 load_dotenv()
@@ -24,7 +25,7 @@ TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
-HOMEWORK_STATUSES = {
+VERDICTS = {
     'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
     'reviewing': 'Работа взята на проверку ревьюером.',
     'rejected': 'Работа проверена: у ревьюера есть замечания.'
@@ -42,7 +43,7 @@ extra_handler = RotatingFileHandler(
     backupCount=5
 )
 formatter = logging.Formatter(
-    '%(asctime)s - %(levelname)s - %(message)s'
+    '%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s'
 )
 handler.setFormatter(formatter)
 extra_handler.setFormatter(formatter)
@@ -83,13 +84,17 @@ def get_api_answer(current_timestamp):
     params = {'from_date': timestamp}
     # Run request
     try:
+        logger.debug('Start api request.')
         response = requests.get(ENDPOINT, params=params, headers=HEADERS)
     except Exception as error:
-        raise ApiEndpoinException(f'API reqeust failed with error: {error}')
+        raise ApiEndpointFatalException(
+            f'API reqeust failed with error: {error}. '
+            f'Parameters: {params}.')
     # Check response status
     if response.status_code != HTTPStatus.OK:
-        raise ApiEndpoinException(
+        raise ApiEndpointHttpResponseException(
             f'Endpoint {ENDPOINT} failure. Status code: {response.status_code}'
+            f' Parameters: {params}'
         )
     # Return api response json data
     return response.json()
@@ -104,16 +109,18 @@ def check_response(response):
     """
     # Prepare valid response keys
     keys = ['current_date', 'homeworks']
-    # If response is list get first element
-    if isinstance(response, list):
-        response = response[0]
+    logger.debug('Start api response check.')
+    # Check api response is a dictionary and it is not empty
+    if isinstance(response, dict) and len(response) == 0:
+        raise ApiResponseException('API response is not dictionary or empty.')
+    # Check response is a dictionary
+    if not isinstance(response, dict):
+        raise TypeError('API response is not a dict')
     # Check api response keys
     for key in keys:
         if key not in response:
             raise KeyError(f'Missing key {key} in api response.')
-    # Check api response is a dictionary and it is not empty
-    if isinstance(response, dict) and len(response) == 0:
-        raise ApiResponseException('API response is not dictionary or empty.')
+
     # Check api response['homeworks'] is a list
     if not isinstance(response.get('homeworks'), list):
         raise ApiResponseException("API response['homeworks'] is not list.")
@@ -137,12 +144,12 @@ def parse_status(homework):
                 f'Missing {repr(key)} key in api response.'
             )
     # Check homework status is valid
-    if homework_status not in HOMEWORK_STATUSES:
+    if homework_status not in VERDICTS:
         raise ApiHomeworkStatusException(
             f'Incorrect home work status: {homework_status}.'
         )
     # Prepare and return status message
-    verdict = HOMEWORK_STATUSES.get(homework_status)
+    verdict = VERDICTS.get(homework_status)
     return f'Изменился статус проверки работы "{homework_name}". {verdict}'
 
 
@@ -152,6 +159,7 @@ def send_message(bot, message):
     Raise exception for any unexpected error.
     """
     try:
+        logger.debug('Send telegram message.')
         bot.send_message(TELEGRAM_CHAT_ID, message)
         logger.info(f'Message sent to telegram: {message}.')
     except Exception as error:
@@ -164,8 +172,8 @@ def main():
 
     # If tokens are missing exit programm
     if not check_tokens():
-        logger.debug('Interrupt main() function.')
-        return
+        logger.critical('Interrupt main() function.')
+        sys.exit('Missing required tokens. Update .env file.')
 
     # Prepare telegram bot and other variables
     raised_exceptions = []
@@ -179,7 +187,6 @@ def main():
             logger.debug('Start api task.')
             response = get_api_answer(current_timestamp)
             homeworks = check_response(response)
-
             # Check updates
             logger.debug('Check status updates.')
             for homework in homeworks:
@@ -196,28 +203,24 @@ def main():
                 else:
                     logger.DEBUG(f'No new status in api response {message}')
             current_timestamp = response.get('current_date')
-
-            # Suspend for RETRY_TIME seconds
-            logger.debug(f'Suspend for {RETRY_TIME} seconds.')
-            time.sleep(RETRY_TIME)
-
+        except TelegramSendMessageException as error:
+            logger.error(f'Proram failure: {error}')
+            logger.debug('End api task with errors.')
         except Exception as error:
             # Log Exception error
-            message = f'Сбой в работе программы: {error}'
+            message = f'Program failure: {error}'
             logging.error(error, exc_info=True)
-
             # Remember exception error and send message to telegram
-            if not isinstance(error, TelegramSendMessageException) and \
-                    error not in raised_exceptions:
+            if error not in raised_exceptions:
                 send_message(bot, message)
                 raised_exceptions.append(error)
-
-            # Suspend for RETRY_TIME seconds
-            logger.debug(f'Suspend for {RETRY_TIME} seconds.')
-            time.sleep(RETRY_TIME)
             logger.debug('End api task with errors.')
         else:
             logger.debug('End api task successfully.')
+        finally:
+            # Suspend for RETRY_TIME seconds
+            logger.debug(f'Suspend for {RETRY_TIME} seconds.')
+            time.sleep(RETRY_TIME)
 
 
 if __name__ == '__main__':

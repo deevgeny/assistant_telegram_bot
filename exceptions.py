@@ -1,5 +1,11 @@
-class ApiEndpoinException(Exception):
-    """Custom API endpoint exception."""
+class ApiEndpointFatalException(Exception):
+    """Custom API endpoint fatal exception."""
+
+    ...
+
+
+class ApiEndpointHttpResponseException(Exception):
+    """Custom API endpoint fatal exception."""
 
     ...
 
