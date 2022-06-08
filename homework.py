@@ -3,6 +3,7 @@ import time
 import logging
 import sys
 from http import HTTPStatus
+from logging.handlers import RotatingFileHandler
 
 import telegram
 import requests
@@ -32,13 +33,22 @@ HOMEWORK_STATUSES = {
 # Set up logger
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+# Heroku service handler
 handler = logging.StreamHandler()
+# VPS handler
+extra_handler = RotatingFileHandler(
+    'main.log',
+    maxBytes=50000000,
+    backupCount=5
+)
 formatter = logging.Formatter(
     '%(asctime)s - %(levelname)s - %(message)s'
 )
 handler.setFormatter(formatter)
+extra_handler.setFormatter(formatter)
 handler.setStream(sys.stdout)
 logger.addHandler(handler)
+logger.addHandler(extra_handler)
 
 
 def check_tokens():
