@@ -15,32 +15,26 @@ class MockResponseGET:
                 'https://practicum.yandex.ru/api/user_api/homework_statuses'
             )
         ), (
-            'Проверьте, что вы делаете запрос на правильный '
-            'ресурс API для запроса статуса домашней работы'
+            'API endpoint is incorrect.'
         )
         assert 'headers' in kwargs, (
-            'Проверьте, что вы передали заголовки `headers` для запроса '
-            'статуса домашней работы'
+            'No `headers` in API request.'
         )
         assert 'Authorization' in kwargs['headers'], (
-            'Проверьте, что в параметры `headers` для запроса статуса '
-            'домашней работы добавили Authorization'
+            '`Authorization` argument is missing in API request `headers`'
         )
         assert kwargs['headers']['Authorization'].startswith('OAuth '), (
-            'Проверьте, что в параметрах `headers` для запроса статуса '
-            'домашней работы Authorization начинается с OAuth'
+            '`Authorization` argument in API request `headers` should start '
+            'with `OAuth`'
         )
         assert params is not None, (
-            'Проверьте, что передали параметры `params` для запроса '
-            'статуса домашней работы'
+            '`params` argument is missing in API request'
         )
         assert 'from_date' in params, (
-            'Проверьте, что в параметрах `params` для запроса статуса '
-            'домашней работы передали `from_date`'
+            '`from_date` argument is missing in API request `params`'
         )
         assert params['from_date'] == current_timestamp, (
-            'Проверьте, что в параметрах `params` для запроса статуса '
-            'домашней работы `from_date` передаете timestamp'
+            '`from_date` argument should be a timestamp'
         )
         self.random_timestamp = random_timestamp
         self.status_code = http_status
@@ -57,27 +51,28 @@ class MockTelegramBot:
 
     def __init__(self, token=None, random_timestamp=None, **kwargs):
         assert token is not None, (
-            'Проверьте, что вы передали токен бота Telegram'
+            'Telegram bot token is missing'
         )
         self.random_timestamp = random_timestamp
 
     def send_message(self, chat_id=None, text=None, **kwargs):
         assert chat_id is not None, (
-            'Проверьте, что вы передали chat_id= при отправке '
-            'сообщения ботом Telegram'
+            'Telegram chat id is missing'
         )
         assert text is not None, (
-            'Проверьте, что вы передали text= при отправке '
-            'сообщения ботом Telegram'
+            '`text` argument is missing in telegram message'
         )
         return self.random_timestamp
 
 
-class TestHomework:
+class TestAssistantBot:
     HOMEWORK_STATUSES = {
-        'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
-        'reviewing': 'Работа взята на проверку ревьюером.',
-        'rejected': 'Работа проверена: у ревьюера есть замечания.'
+        'approved': 
+        'The homework has been checked and approved by the reviewer.',
+        'reviewing':
+        'The homework hase been taken for code review.',
+        'rejected': 
+        'The homework has been checked and rejected by the reviewer.'
     }
     ENV_VARS = ['PRACTICUM_TOKEN', 'TELEGRAM_TOKEN', 'TELEGRAM_CHAT_ID']
     for v in ENV_VARS:
@@ -86,14 +81,13 @@ class TestHomework:
         except KeyError:
             pass
     try:
-        import homework
+        import assistant_bot
     except KeyError as e:
         for arg in e.args:
             if arg in ENV_VARS:
                 assert False, (
-                    'Убедитесь, что при запуске бота, проверяете наличие '
-                    'переменных окружения, и при их отсутствии происходит '
-                    'выход из программы `SystemExit`\n'
+                    'No `SystemExit` or environment variables have not been '
+                    'checked properly\n'
                     f'{repr(e)}'
                 )
             else:
@@ -109,21 +103,21 @@ class TestHomework:
             except KeyError:
                 pass
 
-        import homework
+        import assistant_bot
 
         for v in self.ENV_VARS:
-            utils.check_default_var_exists(homework, v)
+            utils.check_default_var_exists(assistant_bot, v)
 
-        homework.PRACTICUM_TOKEN = None
-        homework.TELEGRAM_TOKEN = None
-        homework.TELEGRAM_CHAT_ID = None
+        assistant_bot.PRACTICUM_TOKEN = None
+        assistant_bot.TELEGRAM_TOKEN = None
+        assistant_bot.TELEGRAM_CHAT_ID = None
 
         func_name = 'check_tokens'
-        utils.check_function(homework, func_name, 0)
-        tokens = homework.check_tokens()
+        utils.check_function(assistant_bot, func_name, 0)
+        tokens = assistant_bot.check_tokens()
         assert not tokens, (
-            'Проверьте, что при отсутствии необходимых переменных окружения, '
-            f'функция {func_name} возвращает False'
+            f'Function {func_name} does not return False when environment '
+            ' variables are missing.'
         )
 
     def test_check_tokens_true(self):
@@ -133,28 +127,28 @@ class TestHomework:
             except KeyError:
                 pass
 
-        import homework
+        import assistant_bot
 
         for v in self.ENV_VARS:
-            utils.check_default_var_exists(homework, v)
+            utils.check_default_var_exists(assistant_bot, v)
 
-        homework.PRACTICUM_TOKEN = 'sometoken'
-        homework.TELEGRAM_TOKEN = '1234:abcdefg'
-        homework.TELEGRAM_CHAT_ID = 12345
+        assistant_bot.PRACTICUM_TOKEN = 'sometoken'
+        assistant_bot.TELEGRAM_TOKEN = '1234:abcdefg'
+        assistant_bot.TELEGRAM_CHAT_ID = 12345
 
         func_name = 'check_tokens'
-        utils.check_function(homework, func_name, 0)
-        tokens = homework.check_tokens()
+        utils.check_function(assistant_bot, func_name, 0)
+        tokens = assistant_bot.check_tokens()
         assert tokens, (
-            'Проверьте, что при наличии необходимых переменных окружения, '
-            f'функция {func_name} возвращает True'
+            f'Function {func_name} does not return True when environment '
+            'variables are NOT missing.'
         )
 
     def test_bot_init_not_global(self):
-        import homework
+        import assistant_bot
 
-        assert not (hasattr(homework, 'bot') and isinstance(getattr(homework, 'bot'), telegram.Bot)), (
-            'Убедитесь, что бот инициализирован только в main()'
+        assert not (hasattr(assistant_bot, 'bot') and isinstance(getattr(assistant_bot, 'bot'), telegram.Bot)), (
+            'Telegram bot should be defined only inside main() function'
         )
 
     def test_logger(self, monkeypatch, random_timestamp):
@@ -163,10 +157,10 @@ class TestHomework:
 
         monkeypatch.setattr(telegram, "Bot", mock_telegram_bot)
 
-        import homework
+        import assistant_bot
 
-        assert hasattr(homework, 'logging'), (
-            'Убедитесь, что настроили логирование для вашего бота'
+        assert hasattr(assistant_bot, 'logging'), (
+            'Loggin is not defined'
         )
 
     def test_send_message(self, monkeypatch, random_timestamp):
@@ -175,8 +169,8 @@ class TestHomework:
 
         monkeypatch.setattr(telegram, "Bot", mock_telegram_bot)
 
-        import homework
-        utils.check_function(homework, 'send_message', 2)
+        import assistant_bot
+        utils.check_function(assistant_bot, 'send_message', 2)
 
     def test_get_api_answers(self, monkeypatch, random_timestamp,
                              current_timestamp, api_url):
@@ -188,31 +182,28 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'get_api_answer'
-        utils.check_function(homework, func_name, 1)
+        utils.check_function(assistant_bot, func_name, 1)
 
-        result = homework.get_api_answer(current_timestamp)
+        result = assistant_bot.get_api_answer(current_timestamp)
         assert type(result) == dict, (
-            f'Проверьте, что из функции `{func_name}` '
-            'возвращается словарь'
+            f'Function `{func_name}` should return dictionary'
         )
         keys_to_check = ['homeworks', 'current_date']
         for key in keys_to_check:
             assert key in result, (
-                f'Проверьте, что функция `{func_name}` '
-                f'возвращает словарь, содержащий ключ `{key}`'
+                f'Function `{func_name}` should return dictionary '
+                f'with {key} key'
             )
         assert type(result['current_date']) == int, (
-            f'Проверьте, что функция `{func_name}` '
-            'в ответе API возвращает значение '
-            'ключа `current_date` типа `int`'
+            f'Function `{func_name}` should return API response with '
+            '`current_date` key which value should be of `int` type'
         )
         assert result['current_date'] == random_timestamp, (
-            f'Проверьте, что функция `{func_name}` '
-            'в ответе API возвращает корректное значение '
-            'ключа `current_date`'
+            f'Function `{func_name}` should return correct value in API '
+            'response `current_date` key'
         )
 
     def test_get_500_api_answer(self, monkeypatch, random_timestamp,
@@ -234,17 +225,17 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_500_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'get_api_answer'
         try:
-            homework.get_api_answer(current_timestamp)
+            assistant_bot.get_api_answer(current_timestamp)
         except:
             pass
         else:
             assert False, (
-                f'Убедитесь, что в функции `{func_name}` обрабатываете ситуацию, '
-                'когда API возвращает код, отличный от 200'
+                f'Function `{func_name}` should process API response with '
+                'status code other than 200'
             )
 
     def test_parse_status(self, random_timestamp):
@@ -252,43 +243,39 @@ class TestHomework:
             "id": 123,
             "status": "approved",
             "homework_name": str(random_timestamp),
-            "reviewer_comment": "Всё нравится",
+            "reviewer_comment": "Everything is OK.",
             "date_updated": "2020-02-13T14:40:57Z",
-            "lesson_name": "Итоговый проект"
+            "lesson_name": "Final project"
         }
 
-        import homework
+        import assistant_bot
 
         func_name = 'parse_status'
 
-        utils.check_function(homework, func_name, 1)
+        utils.check_function(assistant_bot, func_name, 1)
 
-        result = homework.parse_status(test_data)
+        result = assistant_bot.parse_status(test_data)
         assert result.startswith(
             f'Изменился статус проверки работы "{random_timestamp}"'
         ), (
-            'Проверьте, что возвращаете название домашней работы в возврате '
-            f'функции `{func_name}`'
+            f'Function `{func_name}` output should have homework name'
         )
         status = 'approved'
         assert result.endswith(self.HOMEWORK_STATUSES[status]), (
-            'Проверьте, что возвращаете правильный вердикт для статуса '
-            f'`{status}` в возврате функции `{func_name}`'
+            f' Function `{func_name}` output should have `{status}` value'
         )
 
         test_data['status'] = status = 'rejected'
-        result = homework.parse_status(test_data)
+        result = assistant_bot.parse_status(test_data)
         assert result.startswith(
             f'Изменился статус проверки работы "{random_timestamp}"'
         ), (
-            'Проверьте, что возвращаете название домашней работы '
-            'в возврате функции parse_status()'
+            'Function parse_status() output should have homework name'
         )
         assert result.endswith(
             self.HOMEWORK_STATUSES[status]
         ), (
-            'Проверьте, что возвращаете правильный вердикт для статуса '
-            f'`{status}` в возврате функции parse_status()'
+            f'Function parse_status() output should have `{status}` value'
         )
 
     def test_check_response(self, monkeypatch, random_timestamp,
@@ -317,15 +304,14 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
-        response = homework.get_api_answer(current_timestamp)
-        status = homework.check_response(response)
+        response = assistant_bot.get_api_answer(current_timestamp)
+        status = assistant_bot.check_response(response)
         assert status, (
-            f'Убедитесь, что функция `{func_name} '
-            'правильно работает '
-            'при корректном ответе от API'
+            f'Function `{func_name} works incorrectly with correct API '
+            'response'
         )
 
     def test_parse_status_unknown_status(self, monkeypatch, random_timestamp,
@@ -354,27 +340,27 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'parse_status'
-        response = homework.get_api_answer(current_timestamp)
-        homeworks = homework.check_response(response)
+        response = assistant_bot.get_api_answer(current_timestamp)
+        homeworks = assistant_bot.check_response(response)
         for hw in homeworks:
             status_message = None
             try:
-                status_message = homework.parse_status(hw)
+                status_message = assistant_bot.parse_status(hw)
             except:
                 pass
             else:
                 assert False, (
-                    f'Убедитесь, что функция `{func_name}` выбрасывает ошибку '
-                    'при недокументированном статусе домашней работы в ответе от API'
+                    f'Function `{func_name}` should raise error for '
+                    'unknown homework status in API response'
                 )
             if status_message is not None:
                 for hw_status in self.HOMEWORK_STATUSES:
                     assert not status_message.endswith(hw_status), (
-                        f'Убедитесь, что функция `{func_name} не возвращает корректный '
-                        'ответ при получении домашки с недокументированным статусом'
+                        f'Function `{func_name} should not return correct '
+                        'output for homework with unknown status'
                     )
 
     def test_parse_status_no_status_key(self, monkeypatch, random_timestamp,
@@ -402,27 +388,28 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'parse_status'
-        response = homework.get_api_answer(current_timestamp)
-        homeworks = homework.check_response(response)
+        response = assistant_bot.get_api_answer(current_timestamp)
+        homeworks = assistant_bot.check_response(response)
         for hw in homeworks:
             status_message = None
             try:
-                status_message = homework.parse_status(hw)
+                status_message = assistant_bot.parse_status(hw)
             except:
                 pass
             else:
                 assert False, (
-                    f'Убедитесь, что функция `{func_name}` выбрасывает ошибку '
-                    'при отсутствии ключа `homework_status` домашней работы в ответе от API'
+                    f'Function `{func_name}` should raise error for missing '
+                    '`homework_status` key in API response'
                 )
             if status_message is not None:
                 for hw_status in self.HOMEWORK_STATUSES:
                     assert not status_message.endswith(hw_status), (
-                        f'Убедитесь, что функция `{func_name} не возвращает корректный '
-                        'ответ при получении домашки без ключа `homework_status`'
+                        f'Function `{func_name} should not return correct '
+                        'output for API response with missing '
+                        '`homework_status` key'
                     )
 
     def test_parse_status_no_homework_name_key(self, monkeypatch, random_timestamp,
@@ -450,20 +437,20 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'parse_status'
-        response = homework.get_api_answer(current_timestamp)
-        homeworks = homework.check_response(response)
+        response = assistant_bot.get_api_answer(current_timestamp)
+        homeworks = assistant_bot.check_response(response)
         try:
             for hw in homeworks:
-                homework.parse_status(hw)
+                assistant_bot.parse_status(hw)
         except KeyError:
             pass
         else:
             assert False, (
-                f'Убедитесь, что функция `{func_name}` правильно работает '
-                'при отсутствии ключа `homework_name` в ответе от API'
+                f'Function `{func_name}` should work correctly with '
+                'missing `homework_name` key in API response'
             )
 
     def test_check_response_no_homeworks(self, monkeypatch, random_timestamp,
@@ -486,19 +473,18 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_no_homeworks_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
-        result = homework.get_api_answer(current_timestamp)
+        result = assistant_bot.get_api_answer(current_timestamp)
         try:
-            homework.check_response(result)
+            assistant_bot.check_response(result)
         except:
             pass
         else:
             assert False, (
-                f'Убедитесь, что в функции `{func_name} '
-                'обрабатываете ситуацию, когда ответ от API '
-                'не содержит ключа `homeworks`, и выбрасываете ошибку'
+                f'Function `{func_name} should raise error for missing '
+                '`homeworks` key in API response'
             )
 
     def test_check_response_not_dict(self, monkeypatch, random_timestamp,
@@ -527,19 +513,18 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
-        response = homework.get_api_answer(current_timestamp)
+        response = assistant_bot.get_api_answer(current_timestamp)
         try:
-            status = homework.check_response(response)
+            status = assistant_bot.check_response(response)
         except TypeError:
             pass
         else:
             assert status, (
-                f'Убедитесь, что в функции `{func_name} '
-                'обрабатывается ситуация, при которой '
-                'ответ от API имеет некорректный тип.'
+                f'Function `{func_name} should process API response of '
+                'incorrect type'
             )
 
     def test_check_response_homeworks_not_in_list(self, monkeypatch, random_timestamp,
@@ -567,19 +552,18 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
-        response = homework.get_api_answer(current_timestamp)
+        response = assistant_bot.get_api_answer(current_timestamp)
         try:
-            homeworks = homework.check_response(response)
+            homeworks = assistant_bot.check_response(response)
         except:
             pass
         else:
             assert not homeworks, (
-                f'Убедитесь, что в функции `{func_name} '
-                'обрабатывается ситуация, при которой под ключом `homeworks` '
-                'домашки приходят не в виде списка в ответ от API.'
+                f'Function `{func_name} should process API response with '
+                '`homeworks` key of not list type'
             )
 
     def test_check_response_empty(self, monkeypatch, random_timestamp,
@@ -601,19 +585,18 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_empty_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
-        result = homework.get_api_answer(current_timestamp)
+        result = assistant_bot.get_api_answer(current_timestamp)
         try:
-            homework.check_response(result)
+            assistant_bot.check_response(result)
         except:
             pass
         else:
             assert False, (
-                f'Убедитесь, что в функции `{func_name} '
-                'обрабатываете ситуацию, когда ответ от API '
-                'содержит пустой словарь`, и выбрасываете ошибку'
+                f'Function `{func_name} should raise error for API response '
+                'with empty dictionary'
             )
 
     def test_api_response_timeout(self, monkeypatch, random_timestamp,
@@ -628,15 +611,15 @@ class TestHomework:
 
         monkeypatch.setattr(requests, 'get', mock_response_get)
 
-        import homework
+        import assistant_bot
 
         func_name = 'check_response'
         try:
-            homework.get_api_answer(current_timestamp)
+            assistant_bot.get_api_answer(current_timestamp)
         except:
             pass
         else:
             assert False, (
-                f'Убедитесь, что в функции `{func_name}` обрабатываете ситуацию, '
-                'когда API возвращает код, отличный от 200'
+                f'Function `{func_name}` should process API response with '
+                'response status other than 200'
             )

@@ -26,9 +26,9 @@ RETRY_TIME = 600
 ENDPOINT = 'https://practicum.yandex.ru/api/user_api/homework_statuses/'
 HEADERS = {'Authorization': f'OAuth {PRACTICUM_TOKEN}'}
 VERDICTS = {
-    'approved': 'Работа проверена: ревьюеру всё понравилось. Ура!',
-    'reviewing': 'Работа взята на проверку ревьюером.',
-    'rejected': 'Работа проверена: у ревьюера есть замечания.'
+    'approved': 'The homework has been checked and approved by the reviewer.',
+    'reviewing': 'The homework hase been taken for code review.',
+    'rejected': 'The homework has been checked and rejected by the reviewer.'
 }
 
 # Set up logger

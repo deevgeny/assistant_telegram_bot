@@ -1,28 +1,28 @@
 class ApiEndpointFatalException(Exception):
-    """Custom API endpoint fatal exception."""
+    """API endpoint fatal exception."""
 
     ...
 
 
 class ApiEndpointHttpResponseException(Exception):
-    """Custom API endpoint fatal exception."""
+    """API endpoint http response exception."""
 
     ...
 
 
 class ApiResponseException(Exception):
-    """Custom API response exception."""
+    """API response exception."""
 
     ...
 
 
 class ApiHomeworkStatusException(Exception):
-    """Custom API homework exception."""
+    """API homework status exception."""
 
     ...
 
 
 class TelegramSendMessageException(Exception):
-    """Custom telegram send message exception."""
+    """Telegram send message exception."""
 
     ...
