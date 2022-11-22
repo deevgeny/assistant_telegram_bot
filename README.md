@@ -56,6 +56,6 @@ TELEGRAM_CHAT_ID=...
 
 3. Start the assistan bot.
 ```sh
-# Запускаем программу
+# Run the program
 python3 assistance_bot.py
 ```
